@@ -584,11 +584,16 @@ public abstract class AbstractQueuedSynchronizer
         for (;;) {
             Node t = tail;
             if (t == null) { // Must initialize
+                // 尾节点为空，新建节点，设置为头节点
                 if (compareAndSetHead(new Node()))
+                    // 设置尾节点
                     tail = head;
             } else {
+                // 尾节点不尾空
                 node.prev = t;
+                // 设置尾新节点为尾节点
                 if (compareAndSetTail(t, node)) {
+                    // 串联尾节点
                     t.next = node;
                     return t;
                 }
@@ -607,8 +612,10 @@ public abstract class AbstractQueuedSynchronizer
         // Try the fast path of enq; backup to full enq on failure
         Node pred = tail;
         if (pred != null) {
+            // 尾节点不为空，新节点连到队列尾部
             node.prev = pred;
             if (compareAndSetTail(pred, node)) {
+                // 串联尾节点
                 pred.next = node;
                 return node;
             }
@@ -643,6 +650,7 @@ public abstract class AbstractQueuedSynchronizer
          */
         int ws = node.waitStatus;
         if (ws < 0)
+            // 设置node节点状态为0
             compareAndSetWaitStatus(node, ws, 0);
 
         /*
@@ -654,7 +662,9 @@ public abstract class AbstractQueuedSynchronizer
         Node s = node.next;
         if (s == null || s.waitStatus > 0) {
             s = null;
+            // 从尾节点向前驱节点查找，
             for (Node t = tail; t != null && t != node; t = t.prev)
+                // 找到节点状态<=0，然后启动
                 if (t.waitStatus <= 0)
                     s = t;
         }
@@ -857,9 +867,13 @@ public abstract class AbstractQueuedSynchronizer
         try {
             boolean interrupted = false;
             for (;;) {
+                // 前驱节点
                 final Node p = node.predecessor();
+                // 前驱节点是头节点，并且获取锁到锁
                 if (p == head && tryAcquire(arg)) {
+                    // 设置当前节点为头节点
                     setHead(node);
+                    //
                     p.next = null; // help GC
                     failed = false;
                     return interrupted;
@@ -1195,6 +1209,8 @@ public abstract class AbstractQueuedSynchronizer
      */
     // 独占式获取锁
     public final void acquire(int arg) {
+        // 1. 成功获取到锁，返回
+        // 2. 获取失败后，将当前线程通过addWaiter加入到等待队列
         if (!tryAcquire(arg) &&
             acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
             selfInterrupt();
@@ -1259,8 +1275,11 @@ public abstract class AbstractQueuedSynchronizer
      */
     public final boolean release(int arg) {
         if (tryRelease(arg)) {
+            // 释放锁成功，获取头节点
             Node h = head;
+            // 头 节点不为空且头节点等待状态不为0
             if (h != null && h.waitStatus != 0)
+                // 设置节点状态，启动节点线程
                 unparkSuccessor(h);
             return true;
         }

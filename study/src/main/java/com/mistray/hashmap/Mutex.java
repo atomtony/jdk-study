@@ -16,7 +16,9 @@ public class Mutex implements Lock {
 
         @Override
         protected boolean tryAcquire(int arg) {
+            // 如果期望值是0表示获取锁成功，否则获取失败
             if (compareAndSetState(0, 1)) {
+                System.out.println("aaa1");
                 setExclusiveOwnerThread(Thread.currentThread());
                 return true;
             }
@@ -116,7 +118,7 @@ public class Mutex implements Lock {
 
     public static void main(String[] args) throws InterruptedException {
         for (int i = 0; i < 10; i++) {
-            new Thread(new MyTask1(i)).start();
+            new Thread(new MyTask(i)).start();
         }
         TimeUnit.SECONDS.sleep(10000);
     }

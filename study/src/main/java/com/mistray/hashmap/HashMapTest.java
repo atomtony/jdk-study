@@ -1,6 +1,7 @@
 package com.mistray.hashmap;
 
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author MistLight
@@ -9,7 +10,7 @@ import java.util.HashMap;
  */
 public class HashMapTest {
     public static void main(String[] args) {
-        HashMap<String, String> hashMap = new HashMap<>();
+        ConcurrentHashMap<String, String> hashMap = new ConcurrentHashMap<>();
         hashMap.put("1111","22222");
 
     }

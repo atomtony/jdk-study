@@ -274,10 +274,14 @@ public class HashMap<K,V>
                                                loadFactor);
 
         // Find a power of 2 >= initialCapacity
+        // 计算容量，为2的幂次方，大于 initialCapacity 的最小2次方值
         int capacity = 1;
         while (capacity < initialCapacity)
             capacity <<= 1;
-
+        // 初始容量16
+        // 初始加载因子0.75
+        // 初始阈值12
+        // 扩容方案2倍
         this.loadFactor = loadFactor;
         threshold = (int)Math.min(capacity * loadFactor, MAXIMUM_CAPACITY + 1);
         table = new Entry[capacity];

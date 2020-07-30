@@ -470,8 +470,10 @@ public class HashMap<K,V>
             return putForNullKey(value);
         int hash = hash(key);
         int i = indexFor(hash, table.length);
+        // 遍历列表
         for (Entry<K,V> e = table[i]; e != null; e = e.next) {
             Object k;
+            // 找到key相同的节点
             if (e.hash == hash && ((k = e.key) == key || key.equals(k))) {
                 V oldValue = e.value;
                 e.value = value;
@@ -481,6 +483,7 @@ public class HashMap<K,V>
         }
 
         modCount++;
+        // 添加节点
         addEntry(hash, key, value, i);
         return null;
     }
@@ -556,13 +559,17 @@ public class HashMap<K,V>
             return;
         }
 
+        // 创建新数组
         Entry[] newTable = new Entry[newCapacity];
         boolean oldAltHashing = useAltHashing;
         useAltHashing |= sun.misc.VM.isBooted() &&
                 (newCapacity >= Holder.ALTERNATIVE_HASHING_THRESHOLD);
         boolean rehash = oldAltHashing ^ useAltHashing;
+        // 将旧数组中的数据重新的数组，需要重新hash散列
         transfer(newTable, rehash);
+        // 赋值新数组
         table = newTable;
+        // 计算新的阈值
         threshold = (int)Math.min(newCapacity * loadFactor, MAXIMUM_CAPACITY + 1);
     }
 
@@ -571,15 +578,22 @@ public class HashMap<K,V>
      */
     void transfer(Entry[] newTable, boolean rehash) {
         int newCapacity = newTable.length;
+        // 遍历数组
         for (Entry<K,V> e : table) {
+            // 遍历列表
             while(null != e) {
+                // 缓存列表下个节点
                 Entry<K,V> next = e.next;
                 if (rehash) {
                     e.hash = null == e.key ? 0 : hash(e.key);
                 }
+                // 根据新数组大小，返回下标索引
                 int i = indexFor(e.hash, newCapacity);
+                // 返回头节点，赋值给e.next
                 e.next = newTable[i];
+                // 赋值数组i的新头节点
                 newTable[i] = e;
+                // 遍历列表下个节点
                 e = next;
             }
         }
@@ -847,12 +861,15 @@ public class HashMap<K,V>
      * Subclass overrides this to alter the behavior of put method.
      */
     void addEntry(int hash, K key, V value, int bucketIndex) {
+        // 判断是否超过阈值
         if ((size >= threshold) && (null != table[bucketIndex])) {
+            // 扩容，容量增大2倍
             resize(2 * table.length);
             hash = (null != key) ? hash(key) : 0;
+            // 计算新元素在新数组下的桶下标
             bucketIndex = indexFor(hash, table.length);
         }
-
+        // 添加元素
         createEntry(hash, key, value, bucketIndex);
     }
 
@@ -865,8 +882,11 @@ public class HashMap<K,V>
      * clone, and readObject.
      */
     void createEntry(int hash, K key, V value, int bucketIndex) {
+        // 获取到头节点
         Entry<K,V> e = table[bucketIndex];
+        // 创建新节点，并赋值给数组bucketInde下标
         table[bucketIndex] = new Entry<>(hash, key, value, e);
+        // 元素加1
         size++;
     }
 

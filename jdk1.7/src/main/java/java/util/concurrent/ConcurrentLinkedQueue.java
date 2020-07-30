@@ -324,17 +324,22 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
      */
     public boolean offer(E e) {
         checkNotNull(e);
+        // 创建新节点
         final Node<E> newNode = new Node<E>(e);
 
         for (Node<E> t = tail, p = t;;) {
             Node<E> q = p.next;
             if (q == null) {
                 // p is last node
+                // p节点是最后一个节点，且p节点的next属性为null
+                // 设置p属性next节点为newNode节点
                 if (p.casNext(null, newNode)) {
                     // Successful CAS is the linearization point
                     // for e to become an element of this queue,
                     // and for newNode to become "live".
+                    // p节点和t尾节点不是同一个节点
                     if (p != t) // hop two nodes at a time
+                        // CAS操作尾节点切换
                         casTail(t, newNode);  // Failure is OK.
                     return true;
                 }
@@ -345,9 +350,11 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
                 // will also be off-list, in which case we need to
                 // jump to head, from which all live nodes are always
                 // reachable.  Else the new tail is a better bet.
+                // 判断t是否为尾节点，如果不是尾节点，p被赋值尾节点，如果是尾节点，p被赋值头节点
                 p = (t != (t = tail)) ? t : head;
             else
                 // Check for tail updates after two hops.
+                //
                 p = (p != t && t != (t = tail)) ? t : q;
         }
     }

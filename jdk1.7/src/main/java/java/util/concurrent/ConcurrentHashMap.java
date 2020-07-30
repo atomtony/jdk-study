@@ -627,24 +627,29 @@ public class ConcurrentHashMap<K, V> extends AbstractMap<K, V>
          * Remove; match on key only if value null, else match both.
          */
         final V remove(Object key, int hash, Object value) {
+            // 获取锁
             if (!tryLock())
                 scanAndLock(key, hash);
             V oldValue = null;
             try {
                 HashEntry<K,V>[] tab = table;
                 int index = (tab.length - 1) & hash;
+                // 头节点
                 HashEntry<K,V> e = entryAt(tab, index);
                 HashEntry<K,V> pred = null;
                 while (e != null) {
                     K k;
                     HashEntry<K,V> next = e.next;
+                    // 找到相等节点
                     if ((k = e.key) == key ||
                         (e.hash == hash && key.equals(k))) {
                         V v = e.value;
                         if (value == null || value == v || value.equals(v)) {
                             if (pred == null)
+                                // 找到的是列表的第一个节点
                                 setEntryAt(tab, index, next);
                             else
+                                // 设置前驱节点的next节点为找到节点的next节点
                                 pred.setNext(next);
                             ++modCount;
                             --count;

@@ -368,6 +368,7 @@ class Thread implements Runnable {
 
         this.name = name.toCharArray();
 
+        // 获取当前线程，作为创建线程的父线程
         Thread parent = currentThread();
         SecurityManager security = System.getSecurityManager();
         if (g == null) {
@@ -376,12 +377,14 @@ class Thread implements Runnable {
             /* If there is a security manager, ask the security manager
                what to do. */
             if (security != null) {
+                // 当前线程的线程组
                 g = security.getThreadGroup();
             }
 
             /* If the security doesn't have a strong opinion of the matter
                use the parent thread group. */
             if (g == null) {
+                // 父线程的线程组
                 g = parent.getThreadGroup();
             }
         }
@@ -399,19 +402,21 @@ class Thread implements Runnable {
             }
         }
 
+        // 确定当前运行的线程是否有权修改此线程组。
         g.addUnstarted();
 
-        this.group = g;
-        this.daemon = parent.isDaemon();
-        this.priority = parent.getPriority();
+        this.group = g;//设置线程组
+        this.daemon = parent.isDaemon();//继承父类的线程类型
+        this.priority = parent.getPriority();//继承父类的优先级
         if (security == null || isCCLOverridden(parent.getClass()))
             this.contextClassLoader = parent.getContextClassLoader();
         else
             this.contextClassLoader = parent.contextClassLoader;
         this.inheritedAccessControlContext =
                 acc != null ? acc : AccessController.getContext();
-        this.target = target;
+        this.target = target;//任务
         setPriority(priority);
+        // 继承父类 inheritableThreadLocals
         if (parent.inheritableThreadLocals != null)
             this.inheritableThreadLocals =
                 ThreadLocal.createInheritedMap(parent.inheritableThreadLocals);
@@ -419,6 +424,7 @@ class Thread implements Runnable {
         this.stackSize = stackSize;
 
         /* Set thread ID */
+        // 线程 ID
         tid = nextThreadID();
     }
 
@@ -701,6 +707,7 @@ class Thread implements Runnable {
          *
          * A zero status value corresponds to state "NEW".
          */
+        // 初始线程状态为0,线程被start过后，状态就不为0,所以多次调用start方法，回抛出IllegalThreadStateException异常
         if (threadStatus != 0)
             throw new IllegalThreadStateException();
 
@@ -1242,6 +1249,7 @@ class Thread implements Runnable {
 
         if (millis == 0) {
             while (isAlive()) {
+                // 线程等待，等待线程执行然run方法，系统调该线程的notify或者notifyAll方法，唤醒线程
                 wait(0);
             }
         } else {
@@ -1250,6 +1258,7 @@ class Thread implements Runnable {
                 if (delay <= 0) {
                     break;
                 }
+                // 线程等待，等待线程执行然run方法，系统调该线程的notify或者notifyAll方法，唤醒线程
                 wait(delay);
                 now = System.currentTimeMillis() - base;
             }

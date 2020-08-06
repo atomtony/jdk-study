@@ -391,22 +391,28 @@ public class Timer {
         // overflow while still being effectively infinitely large.
         if (Math.abs(period) > (Long.MAX_VALUE >> 1))
             period >>= 1;
-
+        // 锁任务队列，防止多个线程同时对队列添加，造成数据丢失
         synchronized(queue) {
             if (!thread.newTasksMayBeScheduled)
                 throw new IllegalStateException("Timer already cancelled.");
 
+            // 锁任务，防止多个线程同时对task修改，造成数据不一致
             synchronized(task.lock) {
+                // 判断任务为初始状态
                 if (task.state != TimerTask.VIRGIN)
                     throw new IllegalStateException(
                         "Task already scheduled or cancelled");
+                // 设置任务下一次执行时间
                 task.nextExecutionTime = time;
+                // 设置任务执行时间间隔
                 task.period = period;
+                // 设置任务为调度状态
                 task.state = TimerTask.SCHEDULED;
             }
-
+            // 添加队列，由于前面 queue 前面上锁，add 方法操作是线程安全的
             queue.add(task);
             if (queue.getMin() == task)
+                // 通知等待队列的线程，重新唤醒线程，消费任务
                 queue.notify();
         }
     }
@@ -522,6 +528,7 @@ class TimerThread extends Thread {
                 boolean taskFired;
                 synchronized(queue) {
                     // Wait for queue to become non-empty
+                    // 队列为空，释放锁，等待队列不为空
                     while (queue.isEmpty() && newTasksMayBeScheduled)
                         queue.wait();
                     if (queue.isEmpty())
@@ -529,19 +536,28 @@ class TimerThread extends Thread {
 
                     // Queue nonempty; look at first evt and do the right thing
                     long currentTime, executionTime;
+                    // 获取任务
                     task = queue.getMin();
+                    // 锁任务额
                     synchronized(task.lock) {
+                        // 任务状态为取消状态，则移除任务
                         if (task.state == TimerTask.CANCELLED) {
                             queue.removeMin();
                             continue;  // No action required, poll queue again
                         }
+                        // 当前时间
                         currentTime = System.currentTimeMillis();
+                        // 执行时间
                         executionTime = task.nextExecutionTime;
+                        // 执行时间小于当前时间，激活任务。
                         if (taskFired = (executionTime<=currentTime)) {
                             if (task.period == 0) { // Non-repeating, remove
+                                // 间隔时间为 0 ，移除任务，
                                 queue.removeMin();
+                                // 设置这是任务状态执行状态
                                 task.state = TimerTask.EXECUTED;
                             } else { // Repeating task, reschedule
+                                // 重复任务
                                 queue.rescheduleMin(
                                   task.period<0 ? currentTime   - task.period
                                                 : executionTime + task.period);
@@ -549,9 +565,11 @@ class TimerThread extends Thread {
                         }
                     }
                     if (!taskFired) // Task hasn't yet fired; wait
+                        // 任务未被激活，任务等得 executionTime - currentTime 时间，继续轮循判断
                         queue.wait(executionTime - currentTime);
                 }
                 if (taskFired)  // Task fired; run it, holding no locks
+                    // 执行任务
                     task.run();
             } catch(InterruptedException e) {
             }
@@ -595,9 +613,11 @@ class TaskQueue {
      */
     void add(TimerTask task) {
         // Grow backing store if necessary
+        // 如果队列可添加一个元素，则扩容
         if (size + 1 == queue.length)
+            // 扩容为原来容量的 2 倍
             queue = Arrays.copyOf(queue, 2*queue.length);
-
+        // 添加到数组中，并且计数增加 1.
         queue[++size] = task;
         fixUp(size);
     }
@@ -677,11 +697,16 @@ class TaskQueue {
      * nextExecutionTime is greater than or equal to that of its parent.
      */
     private void fixUp(int k) {
+        // 二分排序，k > 1 也就决定了，最近任务执行的任务下标是 1 而不是 0
         while (k > 1) {
+            // 记录中间位置
             int j = k >> 1;
+            // 数组中，j 位置任务在 k 位置任务之前执行，则退出循环。
             if (queue[j].nextExecutionTime <= queue[k].nextExecutionTime)
                 break;
+            // 数组中，j 位置任务在 k 位置任务之后执行，交换任务
             TimerTask tmp = queue[j];  queue[j] = queue[k]; queue[k] = tmp;
+            // 更新当前任务的索引 k。
             k = j;
         }
     }
